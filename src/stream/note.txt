@@ -1,0 +1,37 @@
+虽然大部分情况下stream是容器调用Collection.stream()方法得到的，但stream和collections有以下不同：
+
+    1, 无存储。stream不是一种数据结构，它只是某种数据源的一个视图，数据源可以是一个数组，Java容器或I/O channel等。
+    2, 为函数式编程而生。对stream的任何修改都不会修改背后的数据源，比如对stream执行过滤操作并不会删除被过滤的元素，而是会产生一个不包含被过滤元素的新stream。
+    3, 惰式执行。stream上的操作并不会立即执行，只有等到用户真正需要结果的时候才会执行。
+    4, 可消费性。stream只能被“消费”一次，一旦遍历过就会失效，就像容器的迭代器那样，想要再次遍历必须重新生成。
+    5, 对stream的操作分为为两类，中间操作(intermediate operations)和结束操作(terminal operations)，二者特点是：
+
+中间操作总是会惰式执行，调用中间操作只会生成一个标记了该操作的新stream，仅此而已。
+结束操作会触发实际计算，计算发生时会把所有中间操作积攒的操作以pipeline的方式执行，这样可以减少迭代次数。计算完成之后stream就会失效。
+
+
+中间操作	concat() distinct() filter() flatMap() limit() map() peek()
+            skip() sorted() parallel() sequential() unordered()
+结束操作	allMatch() anyMatch() collect() count() findAny() findFirst()
+            forEach() forEachOrdered() max() min() noneMatch() reduce() toArray()
+
+Stream.of(list): 将list作为一个流，如果是一个列表，这个列表整体是一个流的元素
+list.stream(): list中的每个元素将会是流的元素
+
+
+方法引用类别	举例
+引用静态方法	Integer::sum
+引用某个对象的方法	list::add
+引用某个类的方法	String::length
+引用构造方法	HashMap::new
+
+这种先将元素分组的收集器叫做上游收集器，之后执行其他运算的收集器叫做下游收集器(downstream Collector)。
+
+Stream操作分类
+中间操作(Intermediate operations)	无状态(Stateless, 元素处理不受到前面元素影响)	unordered() filter() map() mapToInt() mapToLong() mapToDouble() flatMap() flatMapToInt() flatMapToLong() flatMapToDouble() peek()
+                                    有状态(Stateful，元素处理受到前面元素影响)	distinct() sorted() sorted() limit() skip()
+结束操作(Terminal operations)	    非短路操作	forEach() forEachOrdered() toArray() reduce() collect() max() min() count()
+                                    短路操作(short-circuiting，不用处理全部元素就可以返回结果)	anyMatch() allMatch() noneMatch() findFirst() findAny()
+
+Stream Pipeline实现：操作记录（双向链表，一个操作就是一个stage）---> 操作叠加（sink来协调两个stage之间的调用关系）
+实际上Stream API内部实现的的本质，就是如何重写Sink的这四个接口方法。
